@@ -163,7 +163,7 @@ app.post("/generate-report", async (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("SRI PDF Service Running");
+  res.send("SRI PDF Service Running v2");
 });
 
 app.listen(PORT, () => {
