@@ -13,22 +13,23 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
 
 async function generatePDF(data) {
-console.log("DEBUG: generatePDF called");
+  console.log("DEBUG: generatePDF called with:", data);
+
   const templatePath = path.join(__dirname, "template.html");
   let html = fs.readFileSync(templatePath, "utf8");
 
-  // 🔹 ALIGN WITH FRONTEND KEYS (lowercase!)
-  const cognition = Number(data.cognitive || 0);
-  const emotion = Number(data.emotional || 0);
+  // READ EXACT KEYS FROM FRONTEND
+  const cognitive = Number(data.cognitive || 0);
+  const emotional = Number(data.emotional || 0);
   const attention = Number(data.attention || 0);
   const execution = Number(data.execution || 0);
   const energy = Number(data.energy || 0);
 
   const totalScore =
-    cognition + emotion + attention + execution + energy;
+    cognitive + emotional + attention + execution + energy;
 
-  const highest = Math.max(cognition, emotion, attention, execution, energy);
-  const lowest = Math.min(cognition, emotion, attention, execution, energy);
+  const highest = Math.max(cognitive, emotional, attention, execution, energy);
+  const lowest = Math.min(cognitive, emotional, attention, execution, energy);
   const variance = highest - lowest;
 
   function band(score) {
@@ -55,25 +56,24 @@ console.log("DEBUG: generatePDF called");
   }
 
   const dominantLever =
-    highest === cognition ? "Cognition" :
-    highest === emotion ? "Emotion" :
+    highest === cognitive ? "Cognitive" :
+    highest === emotional ? "Emotional" :
     highest === attention ? "Attention" :
     highest === execution ? "Execution" :
     "Energy";
 
   const constraintLever =
-    lowest === cognition ? "Cognition" :
-    lowest === emotion ? "Emotion" :
+    lowest === cognitive ? "Cognitive" :
+    lowest === emotional ? "Emotional" :
     lowest === attention ? "Attention" :
     lowest === execution ? "Execution" :
     "Energy";
 
   const computedData = {
+    ...data,
 
     TOTAL_SCORE: totalScore,
     READINESS_CLASSIFICATION: readiness(totalScore),
-    COMPANY_NAME: data.company || "Individual Report",
-    REPORT_DATE: new Date().toLocaleDateString("en-GB"),
 
     DOMINANT_LEVER: dominantLever,
     DOMINANT_LEVER_SCORE: highest,
@@ -84,20 +84,20 @@ console.log("DEBUG: generatePDF called");
     VARIANCE_SCORE: variance,
     VARIANCE_CLASSIFICATION: varianceLabel(variance),
 
-    COGNITION_SCORE: cognition,
-    EMOTION_SCORE: emotion,
+    COGNITION_SCORE: cognitive,
+    EMOTION_SCORE: emotional,
     ATTENTION_SCORE: attention,
     EXECUTION_SCORE: execution,
     ENERGY_SCORE: energy,
 
-    COGNITION_BAND: band(cognition),
-    EMOTION_BAND: band(emotion),
+    COGNITION_BAND: band(cognitive),
+    EMOTION_BAND: band(emotional),
     ATTENTION_BAND: band(attention),
     EXECUTION_BAND: band(execution),
     ENERGY_BAND: band(energy),
 
-    COGNITION_PCT: pct(cognition),
-    EMOTION_PCT: pct(emotion),
+    COGNITION_PCT: pct(cognitive),
+    EMOTION_PCT: pct(emotional),
     ATTENTION_PCT: pct(attention),
     EXECUTION_PCT: pct(execution),
     ENERGY_PCT: pct(energy),
@@ -111,7 +111,7 @@ console.log("DEBUG: generatePDF called");
     EXECUTIVE_SUMMARY:
       `Total score of ${totalScore} reflects ${readiness(totalScore)}. 
 Dominant leverage in ${dominantLever}, constraint pressure in ${constraintLever}. 
-Variance indicates ${varianceLabel(variance)}.`
+Variance indicates ${varianceLabel(variance)}.`,
   };
 
   Object.keys(computedData).forEach(key => {
@@ -135,12 +135,6 @@ Variance indicates ${varianceLabel(variance)}.`
     path: filePath,
     format: "A4",
     printBackground: true,
-    margin: {
-      top: "22mm",
-      bottom: "22mm",
-      left: "20mm",
-      right: "20mm"
-    }
   });
 
   await browser.close();
