@@ -17,6 +17,7 @@ async function generatePDF(data) {
   const templatePath = path.join(__dirname, "template.html");
   let html = fs.readFileSync(templatePath, "utf8");
 
+  // Ensure numeric safety
   const cognition = Number(data.COGNITION_SCORE || 0);
   const emotion = Number(data.EMOTION_SCORE || 0);
   const attention = Number(data.ATTENTION_SCORE || 0);
@@ -28,28 +29,26 @@ async function generatePDF(data) {
   const lowest = Math.min(cognition, emotion, attention, execution, energy);
   const variance = highest - lowest;
 
-  function band(score) {
+  const pct = (score) => Math.round((score / 25) * 100);
+
+  const band = (score) => {
     if (score >= 20) return "High";
     if (score >= 14) return "Moderate";
     return "Low";
-  }
+  };
 
-  function readiness(score) {
+  const readiness = (score) => {
     if (score >= 100) return "Elite Readiness";
     if (score >= 85) return "Developing Readiness";
     if (score >= 70) return "Emerging Readiness";
     return "Foundational Readiness";
-  }
+  };
 
-  function varianceLabel(v) {
+  const varianceLabel = (v) => {
     if (v >= 10) return "High Structural Imbalance";
     if (v >= 5) return "Moderate Structural Skew";
     return "Structurally Balanced";
-  }
-
-  function pct(score) {
-    return Math.round((score / 25) * 100);
-  }
+  };
 
   const dominantLever =
     highest === cognition ? "Cognition" :
@@ -79,21 +78,18 @@ async function generatePDF(data) {
     VARIANCE_SCORE: variance,
     VARIANCE_CLASSIFICATION: varianceLabel(variance),
 
-    // Bands
     COGNITION_BAND: band(cognition),
     EMOTION_BAND: band(emotion),
     ATTENTION_BAND: band(attention),
     EXECUTION_BAND: band(execution),
     ENERGY_BAND: band(energy),
 
-    // Percentages
     COGNITION_PCT: pct(cognition),
     EMOTION_PCT: pct(emotion),
     ATTENTION_PCT: pct(attention),
     EXECUTION_PCT: pct(execution),
     ENERGY_PCT: pct(energy),
 
-    // Interpretations
     COGNITION_INTERPRETATION: "Strategic reasoning and cognitive structuring capacity.",
     EMOTION_INTERPRETATION: "Emotional regulation and resilience under pressure.",
     ATTENTION_INTERPRETATION: "Focus consistency and attentional discipline across cycles.",
@@ -101,15 +97,18 @@ async function generatePDF(data) {
     ENERGY_INTERPRETATION: "Sustainable energy deployment and performance stamina.",
 
     EXECUTIVE_SUMMARY:
-      `The Sales Readiness Index reflects a ${readiness(totalScore)} architecture. 
-Dominant leverage is observed in ${dominantLever}, while constraint pressure is visible in ${constraintLever}. 
-Variance analysis indicates ${varianceLabel(variance)} across performance levers.`
+      `The Sales Readiness Index reflects a ${readiness(totalScore)} architecture. Dominant leverage is observed in ${dominantLever}, while constraint pressure is visible in ${constraintLever}. Variance analysis indicates ${varianceLabel(variance)} across performance levers.`
   };
 
-  Object.keys(computedData).forEach(key => {
+  // Replace placeholders safely
+  for (const key in computedData) {
+    const value = String(computedData[key] ?? "");
     const regex = new RegExp(`{{${key}}}`, "g");
-    html = html.replace(regex, computedData[key]);
-  });
+    html = html.replace(regex, value);
+  }
+
+  // Final cleanup: remove any unreplaced placeholders
+  html = html.replace(/{{[^}]+}}/g, "");
 
   const browser = await puppeteer.launch({
     args: chromium.args,
@@ -142,15 +141,10 @@ Variance analysis indicates ${varianceLabel(variance)} across performance levers
 
 app.post("/generate-report", async (req, res) => {
   try {
-    const data = req.body;
-    const pdfPath = await generatePDF(data);
-
-    res.download(pdfPath, () => {
-      fs.unlinkSync(pdfPath);
-    });
-
+    const pdfPath = await generatePDF(req.body);
+    res.download(pdfPath, () => fs.unlinkSync(pdfPath));
   } catch (error) {
-    console.error(error);
+    console.error("PDF generation error:", error);
     res.status(500).json({ error: "PDF generation failed" });
   }
 });
