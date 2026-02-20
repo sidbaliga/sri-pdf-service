@@ -14,7 +14,8 @@ const PORT = process.env.PORT || 3000;
 
 async function generatePDF(data) {
 
-  let html = fs.readFileSync("./template.html", "utf8");
+ const templatePath = path.join(__dirname, "template.html");
+let html = fs.readFileSync(templatePath, "utf8");
 
   // Inject values
   Object.keys(data).forEach(key => {
