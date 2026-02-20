@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRI Diagnostic Report</title>
+
+<style>
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+body{
+  font-family:'Georgia','Times New Roman',serif;
+  font-size:12pt;
+  line-height:1.5;
+  color:#111;
+  background:#fff;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+/* PAGE STRUCTURE */
+
+.page{
+  width:210mm;
+  height:297mm;
+  page-break-after:always;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  background:#ffffff;
+}
+
+.inner{
+  padding:20mm;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+/* HEADERS */
+
+.page-header{
+  display:flex;
+  justify-content:space-between;
+  border-bottom:1pt solid #E0E0E0;
+  padding-bottom:4mm;
+  margin-bottom:10mm;
+  font-size:8pt;
+  letter-spacing:0.08em;
+  color:#555;
+  text-transform:uppercase;
+}
+
+/* FOOTERS */
+
+.page-footer{
+  position:absolute;
+  bottom:12mm;
+  left:20mm;
+  right:20mm;
+  display:flex;
+  justify-content:space-between;
+  font-size:8pt;
+  color:#666;
+  border-top:1pt solid #E0E0E0;
+  padding-top:3mm;
+}
+
+/* SECTION TITLES */
+
+.section-title{
+  font-size:18pt;
+  font-weight:700;
+  color:#1A2F4A;
+  margin-bottom:8mm;
+  position:relative;
+}
+
+.section-title::after{
+  content:"";
+  display:block;
+  width:45mm;
+  height:2pt;
+  background:#1A2F4A;
+  margin-top:4mm;
+}
+
+/* EXEC SUMMARY */
+
+.exec-grid{
+  display:grid;
+  grid-template-columns:1fr 60mm;
+  gap:10mm;
+}
+
+.exec-summary-text{
+  font-size:11.5pt;
+  line-height:1.65;
+}
+
+.exec-stat-box{
+  border:1pt solid #D0D0D0;
+  background:#FAFAFA;
+  padding:5mm;
+  margin-bottom:5mm;
+}
+
+.exec-stat-label{
+  font-size:7pt;
+  text-transform:uppercase;
+  letter-spacing:0.15em;
+  color:#777;
+  margin-bottom:2mm;
+}
+
+.exec-stat-value{
+  font-size:14pt;
+  font-weight:700;
+  color:#1A2F4A;
+}
+
+/* LEVERS */
+
+.lever-row{
+  display:grid;
+  grid-template-columns:1fr 25mm 1fr 30mm;
+  gap:6mm;
+  padding:6mm 0;
+  border-bottom:1pt solid #F0F0F0;
+}
+
+.lever-name{
+  font-size:12pt;
+  font-weight:700;
+  color:#1A2F4A;
+  margin-bottom:2mm;
+}
+
+.lever-interp{
+  font-size:10pt;
+  line-height:1.5;
+}
+
+.lever-bar-track{
+  height:6pt;
+  background:#E0E0E0;
+  border-radius:3pt;
+  margin-top:5mm;
+  position:relative;
+}
+
+.lever-bar-fill{
+  height:100%;
+  background:#1A2F4A;
+  border-radius:3pt;
+  position:absolute;
+  top:0;
+  left:0;
+}
+
+.lever-band-tag{
+  font-size:8pt;
+  text-transform:uppercase;
+  letter-spacing:0.1em;
+  text-align:center;
+  border:1pt solid #DDD;
+  padding:2mm;
+  color:#666;
+}
+
+/* RADAR PAGE */
+
+.radar-container{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+.radar-box{
+  width:130mm;
+  height:130mm;
+  border:1pt solid #DDD;
+  border-radius:8mm;
+  background:#F8F8F8;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:10mm;
+}
+
+.radar-placeholder{
+  font-size:9pt;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:#888;
+}
+
+.radar-legend{
+  font-size:9pt;
+  color:#444;
+}
+
+/* ROADMAP */
+
+.roadmap-section{
+  margin-bottom:10mm;
+}
+
+.roadmap-title{
+  font-weight:700;
+  font-size:12pt;
+  color:#1A2F4A;
+  margin-bottom:3mm;
+}
+
+.roadmap-body{
+  font-size:10pt;
+  line-height:1.6;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- PAGE 1 COVER -->
+
+<div class="page">
+  <div class="inner" style="justify-content:center; text-align:center;">
+    <div style="font-size:9pt; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:10mm;">
+      CEEMA – Human Performance Stack™
+    </div>
+
+    <div style="font-size:28pt; font-weight:700; margin-bottom:4mm;">
+      Sales Readiness Index (SRI)
+    </div>
+
+    <div style="font-size:13pt; font-style:italic; margin-bottom:15mm;">
+      Strategic Performance Diagnostic
+    </div>
+
+    <div style="font-size:70pt; font-weight:700; color:#1A2F4A;">
+      {{TOTAL_SCORE}}
+    </div>
+
+    <div style="font-size:14pt; margin-bottom:8mm;">
+      / 125
+    </div>
+
+    <div style="font-size:11pt; letter-spacing:0.15em; text-transform:uppercase;">
+      {{READINESS_CLASSIFICATION}}
+    </div>
+
+    <div style="margin-top:20mm; font-size:10pt;">
+      Prepared for {{COMPANY_NAME}} <br>
+      {{REPORT_DATE}}
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2 EXECUTIVE SUMMARY -->
+
+<div class="page">
+  <div class="inner">
+    <div class="page-header">
+      <span>CEEMA – Human Performance Stack™</span>
+      <span>Executive Summary</span>
+    </div>
+
+    <div class="section-title">Executive Summary</div>
+
+    <div class="exec-grid">
+      <div class="exec-summary-text">
+        {{EXECUTIVE_SUMMARY}}
+      </div>
+
+      <div>
+        <div class="exec-stat-box">
+          <div class="exec-stat-label">Total Score</div>
+          <div class="exec-stat-value">{{TOTAL_SCORE}} / 125</div>
+        </div>
+
+        <div class="exec-stat-box">
+          <div class="exec-stat-label">Dominant Lever</div>
+          <div class="exec-stat-value">{{DOMINANT_LEVER}}</div>
+        </div>
+
+        <div class="exec-stat-box">
+          <div class="exec-stat-label">Primary Constraint</div>
+          <div class="exec-stat-value">{{PRIMARY_CONSTRAINT}}</div>
+        </div>
+
+        <div class="exec-stat-box">
+          <div class="exec-stat-label">Variance</div>
+          <div class="exec-stat-value">{{VARIANCE_CLASSIFICATION}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3 LEVER BREAKDOWN PART 1 -->
+
+<div class="page">
+  <div class="inner">
+
+    <div class="page-header">
+      <span>CEEMA – Human Performance Stack™</span>
+      <span>Lever Diagnostics — Part 1</span>
+    </div>
+
+    <div class="section-title">Performance Lever Breakdown</div>
+    <div class="divider-accent"></div>
+
+    <div class="lever-list">
+
+      <!-- Cognition -->
+      <div class="lever-row">
+        <div>
+          <div class="lever-name">Cognition</div>
+          <div class="lever-interp">{{COGNITION_INTERPRETATION}}</div>
+        </div>
+        <div>
+          <div class="lever-score-num">{{COGNITION_SCORE}}</div>
+          <div class="lever-score-denom">/ 25</div>
+        </div>
+        <div>
+          <div class="lever-bar-track">
+            <div class="lever-bar-fill" style="width:{{COGNITION_PCT}}%;"></div>
+          </div>
+        </div>
+        <div class="lever-band-tag">{{COGNITION_BAND}}</div>
+      </div>
+
+      <!-- Emotion -->
+      <div class="lever-row">
+        <div>
+          <div class="lever-name">Emotion</div>
+          <div class="lever-interp">{{EMOTION_INTERPRETATION}}</div>
+        </div>
+        <div>
+          <div class="lever-score-num">{{EMOTION_SCORE}}</div>
+          <div class="lever-score-denom">/ 25</div>
+        </div>
+        <div>
+          <div class="lever-bar-track">
+            <div class="lever-bar-fill" style="width:{{EMOTION_PCT}}%;"></div>
+          </div>
+        </div>
+        <div class="lever-band-tag">{{EMOTION_BAND}}</div>
+      </div>
+
+      <!-- Attention -->
+      <div class="lever-row">
+        <div>
+          <div class="lever-name">Attention</div>
+          <div class="lever-interp">{{ATTENTION_INTERPRETATION}}</div>
+        </div>
+        <div>
+          <div class="lever-score-num">{{ATTENTION_SCORE}}</div>
+          <div class="lever-score-denom">/ 25</div>
+        </div>
+        <div>
+          <div class="lever-bar-track">
+            <div class="lever-bar-fill" style="width:{{ATTENTION_PCT}}%;"></div>
+          </div>
+        </div>
+        <div class="lever-band-tag">{{ATTENTION_BAND}}</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="page-footer">
+    <span>CEEMA – Human Performance Stack™</span>
+    <span>Confidential</span>
+    <span>Page 3</span>
+  </div>
+</div>
+<!-- PAGE 4 LEVER BREAKDOWN PART 2 -->
+
+<div class="page">
+  <div class="inner">
+
+    <div class="page-header">
+      <span>CEEMA – Human Performance Stack™</span>
+      <span>Lever Diagnostics — Part 2</span>
+    </div>
+
+    <div class="section-title">Performance Lever Breakdown</div>
+    <div class="divider-accent"></div>
+
+    <div class="lever-list">
+
+      <!-- Execution -->
+      <div class="lever-row">
+        <div>
+          <div class="lever-name">Execution</div>
+          <div class="lever-interp">{{EXECUTION_INTERPRETATION}}</div>
+        </div>
+        <div>
+          <div class="lever-score-num">{{EXECUTION_SCORE}}</div>
+          <div class="lever-score-denom">/ 25</div>
+        </div>
+        <div>
+          <div class="lever-bar-track">
+            <div class="lever-bar-fill" style="width:{{EXECUTION_PCT}}%;"></div>
+          </div>
+        </div>
+        <div class="lever-band-tag">{{EXECUTION_BAND}}</div>
+      </div>
+
+      <!-- Energy -->
+      <div class="lever-row">
+        <div>
+          <div class="lever-name">Energy</div>
+          <div class="lever-interp">{{ENERGY_INTERPRETATION}}</div>
+        </div>
+        <div>
+          <div class="lever-score-num">{{ENERGY_SCORE}}</div>
+          <div class="lever-score-denom">/ 25</div>
+        </div>
+        <div>
+          <div class="lever-bar-track">
+            <div class="lever-bar-fill" style="width:{{ENERGY_PCT}}%;"></div>
+          </div>
+        </div>
+        <div class="lever-band-tag">{{ENERGY_BAND}}</div>
+      </div>
+
+    </div>
+
+    <!-- Variance Block -->
+
+    <div class="variance-block">
+      <div>
+        <div class="variance-item-label">Highest Lever</div>
+        <div class="variance-item-value">{{DOMINANT_LEVER}}</div>
+        <div class="variance-item-sub">{{DOMINANT_LEVER_SCORE}} / 25</div>
+      </div>
+      <div>
+        <div class="variance-item-label">Lowest Lever</div>
+        <div class="variance-item-value">{{PRIMARY_CONSTRAINT}}</div>
+        <div class="variance-item-sub">{{PRIMARY_CONSTRAINT_SCORE}} / 25</div>
+      </div>
+      <div>
+        <div class="variance-item-label">Variance Score</div>
+        <div class="variance-item-value">{{VARIANCE_SCORE}}</div>
+        <div class="variance-item-sub">{{VARIANCE_CLASSIFICATION}}</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="page-footer">
+    <span>CEEMA – Human Performance Stack™</span>
+    <span>Confidential</span>
+    <span>Page 4</span>
+  </div>
+</div>
+
+<!-- PAGE 5 RADAR -->
+
+<div class="page">
+  <div class="inner">
+
+    <div class="page-header">
+      <span>CEEMA – Human Performance Stack™</span>
+      <span>Performance Visualization</span>
+    </div>
+
+    <div class="section-title">Lever Performance Map</div>
+
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+
+      <canvas id="radarChart" width="500" height="500"></canvas>
+
+      <div style="margin-top:10mm; font-size:9pt; color:#444;">
+        Cognition ({{COGNITION_SCORE}}) ·
+        Emotion ({{EMOTION_SCORE}}) ·
+        Attention ({{ATTENTION_SCORE}}) ·
+        Execution ({{EXECUTION_SCORE}}) ·
+        Energy ({{ENERGY_SCORE}})
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- CHART.JS SCRIPT -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  const ctx = document.getElementById('radarChart');
+
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Cognition', 'Emotion', 'Attention', 'Execution', 'Energy'],
+      datasets: [{
+        label: 'Performance',
+        data: [
+          {{COGNITION_SCORE}},
+          {{EMOTION_SCORE}},
+          {{ATTENTION_SCORE}},
+          {{EXECUTION_SCORE}},
+          {{ENERGY_SCORE}}
+        ],
+        backgroundColor: 'rgba(26, 47, 74, 0.15)',
+        borderColor: '#1A2F4A',
+        borderWidth: 2,
+        pointBackgroundColor: '#1A2F4A'
+      }]
+    },
+    options: {
+      responsive: false,
+      animation: false,
+      scales: {
+        r: {
+          min: 0,
+          max: 25,
+          ticks: {
+            stepSize: 5,
+            backdropColor: 'transparent'
+          },
+          grid: {
+            color: '#DDDDDD'
+          },
+          angleLines: {
+            color: '#DDDDDD'
+          },
+          pointLabels: {
+            font: {
+              size: 12
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+
+});
+</script>
+
+</body>
+</html>
