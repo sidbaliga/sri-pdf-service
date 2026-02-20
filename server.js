@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
 
 async function generatePDF(data) {
-
+console.log("DEBUG: generatePDF called");
   const templatePath = path.join(__dirname, "template.html");
   let html = fs.readFileSync(templatePath, "utf8");
 
