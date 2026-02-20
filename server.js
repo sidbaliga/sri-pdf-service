@@ -17,7 +17,6 @@ async function generatePDF(data) {
   const templatePath = path.join(__dirname, "template.html");
   let html = fs.readFileSync(templatePath, "utf8");
 
-  // Extract incoming values safely
   const cognition = Number(data.COGNITION_SCORE || 0);
   const emotion = Number(data.EMOTION_SCORE || 0);
   const attention = Number(data.ATTENTION_SCORE || 0);
@@ -48,6 +47,10 @@ async function generatePDF(data) {
     return "Structurally Balanced";
   }
 
+  function pct(score) {
+    return Math.round((score / 25) * 100);
+  }
+
   const dominantLever =
     highest === cognition ? "Cognition" :
     highest === emotion ? "Emotion" :
@@ -76,11 +79,26 @@ async function generatePDF(data) {
     VARIANCE_SCORE: variance,
     VARIANCE_CLASSIFICATION: varianceLabel(variance),
 
+    // Bands
     COGNITION_BAND: band(cognition),
     EMOTION_BAND: band(emotion),
     ATTENTION_BAND: band(attention),
     EXECUTION_BAND: band(execution),
     ENERGY_BAND: band(energy),
+
+    // Percentages
+    COGNITION_PCT: pct(cognition),
+    EMOTION_PCT: pct(emotion),
+    ATTENTION_PCT: pct(attention),
+    EXECUTION_PCT: pct(execution),
+    ENERGY_PCT: pct(energy),
+
+    // Interpretations
+    COGNITION_INTERPRETATION: "Strategic reasoning and cognitive structuring capacity.",
+    EMOTION_INTERPRETATION: "Emotional regulation and resilience under pressure.",
+    ATTENTION_INTERPRETATION: "Focus consistency and attentional discipline across cycles.",
+    EXECUTION_INTERPRETATION: "Bias toward action and operational delivery strength.",
+    ENERGY_INTERPRETATION: "Sustainable energy deployment and performance stamina.",
 
     EXECUTIVE_SUMMARY:
       `The Sales Readiness Index reflects a ${readiness(totalScore)} architecture. 
@@ -88,7 +106,6 @@ Dominant leverage is observed in ${dominantLever}, while constraint pressure is 
 Variance analysis indicates ${varianceLabel(variance)} across performance levers.`
   };
 
-  // Inject values into template
   Object.keys(computedData).forEach(key => {
     const regex = new RegExp(`{{${key}}}`, "g");
     html = html.replace(regex, computedData[key]);
