@@ -14,25 +14,95 @@ const PORT = process.env.PORT || 3000;
 
 async function generatePDF(data) {
 
- const templatePath = path.join(__dirname, "template.html");
-let html = fs.readFileSync(templatePath, "utf8");
+  const templatePath = path.join(__dirname, "template.html");
+  let html = fs.readFileSync(templatePath, "utf8");
 
-  // Inject values
-  Object.keys(data).forEach(key => {
+  // Extract incoming values safely
+  const cognition = Number(data.COGNITION_SCORE || 0);
+  const emotion = Number(data.EMOTION_SCORE || 0);
+  const attention = Number(data.ATTENTION_SCORE || 0);
+  const execution = Number(data.EXECUTION_SCORE || 0);
+  const energy = Number(data.ENERGY_SCORE || 0);
+  const totalScore = Number(data.TOTAL_SCORE || 0);
+
+  const highest = Math.max(cognition, emotion, attention, execution, energy);
+  const lowest = Math.min(cognition, emotion, attention, execution, energy);
+  const variance = highest - lowest;
+
+  function band(score) {
+    if (score >= 20) return "High";
+    if (score >= 14) return "Moderate";
+    return "Low";
+  }
+
+  function readiness(score) {
+    if (score >= 100) return "Elite Readiness";
+    if (score >= 85) return "Developing Readiness";
+    if (score >= 70) return "Emerging Readiness";
+    return "Foundational Readiness";
+  }
+
+  function varianceLabel(v) {
+    if (v >= 10) return "High Structural Imbalance";
+    if (v >= 5) return "Moderate Structural Skew";
+    return "Structurally Balanced";
+  }
+
+  const dominantLever =
+    highest === cognition ? "Cognition" :
+    highest === emotion ? "Emotion" :
+    highest === attention ? "Attention" :
+    highest === execution ? "Execution" :
+    "Energy";
+
+  const constraintLever =
+    lowest === cognition ? "Cognition" :
+    lowest === emotion ? "Emotion" :
+    lowest === attention ? "Attention" :
+    lowest === execution ? "Execution" :
+    "Energy";
+
+  const computedData = {
+    ...data,
+
+    READINESS_CLASSIFICATION: readiness(totalScore),
+
+    DOMINANT_LEVER: dominantLever,
+    DOMINANT_LEVER_SCORE: highest,
+
+    PRIMARY_CONSTRAINT: constraintLever,
+    PRIMARY_CONSTRAINT_SCORE: lowest,
+
+    VARIANCE_SCORE: variance,
+    VARIANCE_CLASSIFICATION: varianceLabel(variance),
+
+    COGNITION_BAND: band(cognition),
+    EMOTION_BAND: band(emotion),
+    ATTENTION_BAND: band(attention),
+    EXECUTION_BAND: band(execution),
+    ENERGY_BAND: band(energy),
+
+    EXECUTIVE_SUMMARY:
+      `The Sales Readiness Index reflects a ${readiness(totalScore)} architecture. 
+Dominant leverage is observed in ${dominantLever}, while constraint pressure is visible in ${constraintLever}. 
+Variance analysis indicates ${varianceLabel(variance)} across performance levers.`
+  };
+
+  // Inject values into template
+  Object.keys(computedData).forEach(key => {
     const regex = new RegExp(`{{${key}}}`, "g");
-    html = html.replace(regex, data[key]);
+    html = html.replace(regex, computedData[key]);
   });
 
-const browser = await puppeteer.launch({
-  args: chromium.args,
-  defaultViewport: chromium.defaultViewport,
-  executablePath: await chromium.executablePath(),
-  headless: true,
-});
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: true,
+  });
 
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: "networkidle0" });
-
 
   const filePath = path.join(__dirname, `report-${Date.now()}.pdf`);
 
@@ -55,13 +125,11 @@ const browser = await puppeteer.launch({
 
 app.post("/generate-report", async (req, res) => {
   try {
-
     const data = req.body;
-
     const pdfPath = await generatePDF(data);
 
     res.download(pdfPath, () => {
-      fs.unlinkSync(pdfPath); // delete after sending
+      fs.unlinkSync(pdfPath);
     });
 
   } catch (error) {
