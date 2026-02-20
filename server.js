@@ -31,7 +31,7 @@ const browser = await puppeteer.launch({
 
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: "networkidle0" });
-  await page.waitForTimeout(1000);
+
 
   const filePath = path.join(__dirname, `report-${Date.now()}.pdf`);
 
