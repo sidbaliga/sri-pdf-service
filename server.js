@@ -17,38 +17,42 @@ async function generatePDF(data) {
   const templatePath = path.join(__dirname, "template.html");
   let html = fs.readFileSync(templatePath, "utf8");
 
-  // Ensure numeric safety
-  const cognition = Number(data.COGNITION_SCORE || 0);
-  const emotion = Number(data.EMOTION_SCORE || 0);
-  const attention = Number(data.ATTENTION_SCORE || 0);
-  const execution = Number(data.EXECUTION_SCORE || 0);
-  const energy = Number(data.ENERGY_SCORE || 0);
-  const totalScore = Number(data.TOTAL_SCORE || 0);
+  // 🔹 ALIGN WITH FRONTEND KEYS (lowercase!)
+  const cognition = Number(data.cognitive || 0);
+  const emotion = Number(data.emotional || 0);
+  const attention = Number(data.attention || 0);
+  const execution = Number(data.execution || 0);
+  const energy = Number(data.energy || 0);
+
+  const totalScore =
+    cognition + emotion + attention + execution + energy;
 
   const highest = Math.max(cognition, emotion, attention, execution, energy);
   const lowest = Math.min(cognition, emotion, attention, execution, energy);
   const variance = highest - lowest;
 
-  const pct = (score) => Math.round((score / 25) * 100);
-
-  const band = (score) => {
+  function band(score) {
     if (score >= 20) return "High";
     if (score >= 14) return "Moderate";
     return "Low";
-  };
+  }
 
-  const readiness = (score) => {
+  function readiness(score) {
     if (score >= 100) return "Elite Readiness";
     if (score >= 85) return "Developing Readiness";
     if (score >= 70) return "Emerging Readiness";
     return "Foundational Readiness";
-  };
+  }
 
-  const varianceLabel = (v) => {
+  function varianceLabel(v) {
     if (v >= 10) return "High Structural Imbalance";
     if (v >= 5) return "Moderate Structural Skew";
     return "Structurally Balanced";
-  };
+  }
+
+  function pct(score) {
+    return Math.round((score / 25) * 100);
+  }
 
   const dominantLever =
     highest === cognition ? "Cognition" :
@@ -65,9 +69,11 @@ async function generatePDF(data) {
     "Energy";
 
   const computedData = {
-    ...data,
 
+    TOTAL_SCORE: totalScore,
     READINESS_CLASSIFICATION: readiness(totalScore),
+    COMPANY_NAME: data.company || "Individual Report",
+    REPORT_DATE: new Date().toLocaleDateString("en-GB"),
 
     DOMINANT_LEVER: dominantLever,
     DOMINANT_LEVER_SCORE: highest,
@@ -77,6 +83,12 @@ async function generatePDF(data) {
 
     VARIANCE_SCORE: variance,
     VARIANCE_CLASSIFICATION: varianceLabel(variance),
+
+    COGNITION_SCORE: cognition,
+    EMOTION_SCORE: emotion,
+    ATTENTION_SCORE: attention,
+    EXECUTION_SCORE: execution,
+    ENERGY_SCORE: energy,
 
     COGNITION_BAND: band(cognition),
     EMOTION_BAND: band(emotion),
@@ -97,18 +109,15 @@ async function generatePDF(data) {
     ENERGY_INTERPRETATION: "Sustainable energy deployment and performance stamina.",
 
     EXECUTIVE_SUMMARY:
-      `The Sales Readiness Index reflects a ${readiness(totalScore)} architecture. Dominant leverage is observed in ${dominantLever}, while constraint pressure is visible in ${constraintLever}. Variance analysis indicates ${varianceLabel(variance)} across performance levers.`
+      `Total score of ${totalScore} reflects ${readiness(totalScore)}. 
+Dominant leverage in ${dominantLever}, constraint pressure in ${constraintLever}. 
+Variance indicates ${varianceLabel(variance)}.`
   };
 
-  // Replace placeholders safely
-  for (const key in computedData) {
-    const value = String(computedData[key] ?? "");
+  Object.keys(computedData).forEach(key => {
     const regex = new RegExp(`{{${key}}}`, "g");
-    html = html.replace(regex, value);
-  }
-
-  // Final cleanup: remove any unreplaced placeholders
-  html = html.replace(/{{[^}]+}}/g, "");
+    html = html.replace(regex, computedData[key]);
+  });
 
   const browser = await puppeteer.launch({
     args: chromium.args,
@@ -142,9 +151,13 @@ async function generatePDF(data) {
 app.post("/generate-report", async (req, res) => {
   try {
     const pdfPath = await generatePDF(req.body);
-    res.download(pdfPath, () => fs.unlinkSync(pdfPath));
+
+    res.download(pdfPath, () => {
+      fs.unlinkSync(pdfPath);
+    });
+
   } catch (error) {
-    console.error("PDF generation error:", error);
+    console.error(error);
     res.status(500).json({ error: "PDF generation failed" });
   }
 });
