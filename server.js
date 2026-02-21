@@ -289,6 +289,9 @@ app.post("/generate-report", async (req, res) => {
       .select("*")
       .eq("id", id)
       .single();
+    console.log("ID received:", id);
+console.log("Supabase data:", JSON.stringify(data));
+console.log("Supabase error:", JSON.stringify(error));
 
     if (error || !data) {
       console.error("Supabase fetch error:", error);
