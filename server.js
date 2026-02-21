@@ -5,6 +5,7 @@ const fs = require("fs");
 const puppeteer = require("puppeteer");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
+const { Resend } = require("resend");
 
 const app = express();
 app.use(cors());
@@ -16,6 +17,8 @@ const supabase = createClient(
   "https://wkjobfzvucoxhdynncfw.supabase.co",
   process.env.SUPABASE_ANON_KEY
 );
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function band(score) {
   if (score >= 20) return "Performance Strength";
@@ -42,7 +45,7 @@ function pct(score) {
   return Math.round((score / 25) * 100);
 }
 
-function leverName(scores, targetValue) {
+function getLeverName(rawScores, targetValue) {
   const map = {
     cognitive: "Cognition",
     emotional: "Emotion",
@@ -50,7 +53,7 @@ function leverName(scores, targetValue) {
     execution: "Execution",
     energy:    "Energy",
   };
-  const entry = Object.entries(scores).find(([, v]) => v === targetValue);
+  const entry = Object.entries(rawScores).find(([, v]) => v === targetValue);
   return entry ? map[entry[0]] : "Unknown";
 }
 
@@ -93,29 +96,22 @@ function structuralPattern(scores) {
   const { cognitive, emotional, attention, execution, energy } = scores;
   const vals = [cognitive, emotional, attention, execution, energy];
   const avg = vals.reduce((a, b) => a + b, 0) / 5;
-
-  if (cognitive >= 18 && attention >= 18) return "Strategic Processor";
-  if (energy >= 18 && execution < 12)      return "High Drive, Low Conversion";
-  if (cognitive < 12 && emotional >= 18)   return "Emotional Override Profile";
-  if (vals.every(v => Math.abs(v - avg) < 4)) return "Balanced Generalist";
-  if (vals.filter(v => v < 12).length >= 3)   return "Multi-System Underperformance";
+  if (cognitive >= 18 && attention >= 18)      return "Strategic Processor";
+  if (energy >= 18 && execution < 12)          return "High Drive, Low Conversion";
+  if (cognitive < 12 && emotional >= 18)       return "Emotional Override Profile";
+  if (vals.every(v => Math.abs(v - avg) < 4))  return "Balanced Generalist";
+  if (vals.filter(v => v < 12).length >= 3)    return "Multi-System Underperformance";
   return "Mixed Structural Profile";
 }
 
-function patternExplanation(pattern, scores) {
+function patternExplanation(pattern) {
   const map = {
-    "Strategic Processor":
-      "High Cognition and Attention scores indicate strong analytical capacity and focus discipline. This profile processes complex information effectively and maintains clarity under ambiguity. The primary development opportunity lies in ensuring Execution and Energy systems can match the strategic output capacity. Without operational follow-through, strategic capability remains theoretical.",
-    "High Drive, Low Conversion":
-      "Elevated Energy combined with low Execution indicates a motivation-execution misalignment. Drive is present but behavioral discipline and follow-through systems are underdeveloped. This profile often produces high activity volume with low output efficiency. Structural intervention in Execution architecture is the immediate priority.",
-    "Emotional Override Profile":
-      "High Emotional capacity with low Cognitive scores creates a risk environment where reactivity supersedes analysis. Decisions under pressure are likely emotion-driven rather than structurally reasoned. This profile benefits significantly from cognitive structuring protocols and decision frameworks that introduce analytical discipline before action.",
-    "Balanced Generalist":
-      "Scores are evenly distributed across all five levers, indicating a generalist performance architecture. No single lever dominates and no single lever critically underperforms. The development pathway involves selecting one or two levers for deliberate amplification to move from balanced competence toward structural excellence.",
-    "Multi-System Underperformance":
-      "Three or more levers are operating below functional threshold, creating compounding performance drag across the system. Single-lever interventions will be insufficient. A systemic recalibration approach is required, prioritizing foundational stability before targeted lever development.",
-    "Mixed Structural Profile":
-      "The performance architecture shows a combination of functional and underperforming levers without a dominant pattern signal. This profile requires individual lever assessment to identify specific intervention points. The absence of a clear structural pattern suggests inconsistent development across performance domains.",
+    "Strategic Processor":         "High Cognition and Attention scores indicate strong analytical capacity and focus discipline. This profile processes complex information effectively and maintains clarity under ambiguity. The primary development opportunity lies in ensuring Execution and Energy systems can match the strategic output capacity. Without operational follow-through, strategic capability remains theoretical.",
+    "High Drive, Low Conversion":  "Elevated Energy combined with low Execution indicates a motivation-execution misalignment. Drive is present but behavioral discipline and follow-through systems are underdeveloped. This profile often produces high activity volume with low output efficiency. Structural intervention in Execution architecture is the immediate priority.",
+    "Emotional Override Profile":  "High Emotional capacity with low Cognitive scores creates a risk environment where reactivity supersedes analysis. Decisions under pressure are likely emotion-driven rather than structurally reasoned. This profile benefits significantly from cognitive structuring protocols and decision frameworks that introduce analytical discipline before action.",
+    "Balanced Generalist":         "Scores are evenly distributed across all five levers, indicating a generalist performance architecture. No single lever dominates and no single lever critically underperforms. The development pathway involves selecting one or two levers for deliberate amplification to move from balanced competence toward structural excellence.",
+    "Multi-System Underperformance": "Three or more levers are operating below functional threshold, creating compounding performance drag across the system. Single-lever interventions will be insufficient. A systemic recalibration approach is required, prioritizing foundational stability before targeted lever development.",
+    "Mixed Structural Profile":    "The performance architecture shows a combination of functional and underperforming levers without a dominant pattern signal. This profile requires individual lever assessment to identify specific intervention points.",
   };
   return map[pattern] ?? "Structural pattern analysis unavailable.";
 }
@@ -140,7 +136,6 @@ function roadmap(scores) {
     Execution:  "Establish non-negotiable daily execution protocols. Introduce accountability structures with measurable behavioral outputs. Eliminate decision drift and activity dispersion.",
     Energy:     "Audit current energy expenditure and identify high-drain, low-return activities. Implement structured recovery cycles. Rebuild sustainable operational output architecture.",
   };
-
   const structuralMap = {
     Cognition:  "Expand cognitive bandwidth through sustained analytical practice. Introduce structured problem decomposition disciplines. Build decision-quality review mechanisms into performance cycles.",
     Emotion:    "Strengthen emotional architecture through structured regulation practice. Develop consistent performance-state triggers. Build resilience protocols for sustained high-performance environments.",
@@ -148,7 +143,6 @@ function roadmap(scores) {
     Execution:  "Build execution consistency through behavioral habit architecture. Develop precision follow-through disciplines. Implement outcome-tracking mechanisms to close execution gaps.",
     Energy:     "Develop strategic energy management frameworks. Build peak-performance state protocols. Implement proactive recovery architecture to sustain operational output.",
   };
-
   const leverageMap = {
     Cognition:  "Deploy high Cognition in complex client scenarios, strategic planning, and competitive analysis to drive higher-order decision quality across the sales architecture.",
     Emotion:    "Leverage strong Emotional regulation in relationship-intensive environments, high-stakes negotiations, and client retention scenarios to build trust infrastructure.",
@@ -169,7 +163,7 @@ function executiveSummary(scores, total, dominant, constraint, variance, pattern
     `The dominant performance lever is ${dominant}, representing the highest structural asset in the current architecture. ` +
     `The primary constraint lever is ${constraint}, where underperformance creates the greatest drag on overall output efficiency. ` +
     `Variance across the five levers registers at ${variance} points, indicating ${varianceLabel(variance)}. ` +
-    `The structural pattern classification is ${pattern}, which defines the characteristic shape of this performance system. ` +
+    `The structural pattern classification is ${pattern}. ` +
     `Intervention priorities are sequenced in the advisory roadmap based on systemic impact rather than symptomatic urgency.`;
 }
 
@@ -189,59 +183,50 @@ async function generatePDF(scores, email, company, reportDate) {
   const variance   = highest - lowest;
 
   const rawScores  = { cognitive, emotional, attention, execution, energy };
-  const dominant   = leverName(rawScores, highest);
-  const constraint = leverName(rawScores, lowest);
+  const dominant   = getLeverName(rawScores, highest);
+  const constraint = getLeverName(rawScores, lowest);
   const pattern    = structuralPattern(rawScores);
   const road       = roadmap(rawScores);
   const summary    = executiveSummary(rawScores, total, dominant, constraint, variance, pattern);
 
   const placeholders = {
-    TOTAL_SCORE:                   total,
-    READINESS_CLASSIFICATION:      readiness(total),
-    COMPANY_NAME:                  company || email || "Not provided",
-    REPORT_DATE:                   reportDate || new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
-
-    EXECUTIVE_SUMMARY:             summary,
-
-    DOMINANT_LEVER:                dominant,
-    DOMINANT_LEVER_SCORE:          highest,
-    PRIMARY_CONSTRAINT:            constraint,
-    PRIMARY_CONSTRAINT_SCORE:      lowest,
-    VARIANCE_SCORE:                variance,
-    VARIANCE_CLASSIFICATION:       varianceLabel(variance),
-
-    COGNITION_SCORE:               cognitive,
-    EMOTION_SCORE:                 emotional,
-    ATTENTION_SCORE:               attention,
-    EXECUTION_SCORE:               execution,
-    ENERGY_SCORE:                  energy,
-
-    COGNITION_BAND:                band(cognitive),
-    EMOTION_BAND:                  band(emotional),
-    ATTENTION_BAND:                band(attention),
-    EXECUTION_BAND:                band(execution),
-    ENERGY_BAND:                   band(energy),
-
-    COGNITION_PCT:                 pct(cognitive),
-    EMOTION_PCT:                   pct(emotional),
-    ATTENTION_PCT:                 pct(attention),
-    EXECUTION_PCT:                 pct(execution),
-    ENERGY_PCT:                    pct(energy),
-
-    COGNITION_INTERPRETATION:      interpretation("Cognition",  cognitive),
-    EMOTION_INTERPRETATION:        interpretation("Emotion",    emotional),
-    ATTENTION_INTERPRETATION:      interpretation("Attention",  attention),
-    EXECUTION_INTERPRETATION:      interpretation("Execution",  execution),
-    ENERGY_INTERPRETATION:         interpretation("Energy",     energy),
-
-    STRUCTURAL_PATTERN:            pattern,
-    STRUCTURAL_PATTERN_EXPLANATION: patternExplanation(pattern, rawScores),
-
-    ROADMAP_IMMEDIATE:             road.immediate,
-    ROADMAP_STRUCTURAL:            road.structural,
-    ROADMAP_LEVERAGE:              road.leverage,
-
-    RADAR_CHART_BASE64:            "data:image/png;base64,iVBORw0KGgo=",
+    TOTAL_SCORE:                    total,
+    READINESS_CLASSIFICATION:       readiness(total),
+    COMPANY_NAME:                   company || email || "Not provided",
+    REPORT_DATE:                    reportDate || new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
+    EXECUTIVE_SUMMARY:              summary,
+    DOMINANT_LEVER:                 dominant,
+    DOMINANT_LEVER_SCORE:           highest,
+    PRIMARY_CONSTRAINT:             constraint,
+    PRIMARY_CONSTRAINT_SCORE:       lowest,
+    VARIANCE_SCORE:                 variance,
+    VARIANCE_CLASSIFICATION:        varianceLabel(variance),
+    COGNITION_SCORE:                cognitive,
+    EMOTION_SCORE:                  emotional,
+    ATTENTION_SCORE:                attention,
+    EXECUTION_SCORE:                execution,
+    ENERGY_SCORE:                   energy,
+    COGNITION_BAND:                 band(cognitive),
+    EMOTION_BAND:                   band(emotional),
+    ATTENTION_BAND:                 band(attention),
+    EXECUTION_BAND:                 band(execution),
+    ENERGY_BAND:                    band(energy),
+    COGNITION_PCT:                  pct(cognitive),
+    EMOTION_PCT:                    pct(emotional),
+    ATTENTION_PCT:                  pct(attention),
+    EXECUTION_PCT:                  pct(execution),
+    ENERGY_PCT:                     pct(energy),
+    COGNITION_INTERPRETATION:       interpretation("Cognition",  cognitive),
+    EMOTION_INTERPRETATION:         interpretation("Emotion",    emotional),
+    ATTENTION_INTERPRETATION:       interpretation("Attention",  attention),
+    EXECUTION_INTERPRETATION:       interpretation("Execution",  execution),
+    ENERGY_INTERPRETATION:          interpretation("Energy",     energy),
+    STRUCTURAL_PATTERN:             pattern,
+    STRUCTURAL_PATTERN_EXPLANATION: patternExplanation(pattern),
+    ROADMAP_IMMEDIATE:              road.immediate,
+    ROADMAP_STRUCTURAL:             road.structural,
+    ROADMAP_LEVERAGE:               road.leverage,
+    RADAR_CHART_BASE64:             "data:image/png;base64,iVBORw0KGgo=",
   };
 
   Object.keys(placeholders).forEach(key => {
@@ -281,6 +266,7 @@ app.post("/generate-report", async (req, res) => {
     const { id, email } = req.body;
 
     console.log("ID received:", id);
+    console.log("Email received:", email);
 
     if (!id) {
       return res.status(400).json({ error: "Missing record id" });
@@ -304,19 +290,59 @@ app.post("/generate-report", async (req, res) => {
     });
 
     const pdfPath = await generatePDF(data, email || data.email, email || data.email, reportDate);
+    const pdfBuffer = fs.readFileSync(pdfPath);
 
-    res.download(pdfPath, `SRI-Performance-Report-${Date.now()}.pdf`, () => {
-      fs.unlinkSync(pdfPath);
+    await resend.emails.send({
+      from: "hello@sidbaliga.in",
+      to: email || data.email,
+      subject: "Your Sales Readiness Index (SRI) Report",
+      html: `
+        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #111111;">
+          <p style="font-size: 11pt; color: #888888; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px;">
+            CEEMA – Human Performance Stack™
+          </p>
+          <h1 style="font-size: 22pt; color: #1A2F4A; margin-bottom: 4px;">
+            Your SRI Report is Ready
+          </h1>
+          <p style="font-size: 12pt; color: #444444; font-style: italic; margin-bottom: 24px;">
+            Performance is engineered. Not wished.
+          </p>
+          <hr style="border: none; border-top: 1px solid #DDDDDD; margin-bottom: 24px;" />
+          <p style="font-size: 11pt; color: #222222; line-height: 1.6;">
+            Your Sales Readiness Index diagnostic report is attached to this email.
+          </p>
+          <p style="font-size: 11pt; color: #222222; line-height: 1.6; margin-top: 12px;">
+            Total SRI Score: <strong style="color: #1A2F4A;">${data.total_score} / 125</strong>
+          </p>
+          <p style="font-size: 11pt; color: #222222; line-height: 1.6; margin-top: 12px;">
+            Open the attached PDF for your full performance lever analysis, structural pattern classification, and advisory roadmap.
+          </p>
+          <hr style="border: none; border-top: 1px solid #DDDDDD; margin-top: 32px; margin-bottom: 16px;" />
+          <p style="font-size: 8pt; color: #888888;">
+            Confidential Advisory Document — Not for Distribution
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `SRI-Performance-Report-${Date.now()}.pdf`,
+          content: pdfBuffer.toString("base64"),
+        },
+      ],
     });
+
+    fs.unlinkSync(pdfPath);
+
+    res.status(200).json({ success: true, message: "Report sent to " + (email || data.email) });
 
   } catch (error) {
     console.error("Generate report error:", error);
-    res.status(500).json({ error: "PDF generation failed", detail: error.message });
+    res.status(500).json({ error: "Report generation failed", detail: error.message });
   }
 });
 
 app.get("/", (req, res) => {
-  res.send("SRI PDF Service Running v3 — Option 2 Architecture");
+  res.send("SRI PDF Service Running — Email Delivery Mode");
 });
 
 app.listen(PORT, () => {
