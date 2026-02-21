@@ -13,8 +13,3 @@
     "puppeteer": "^21.0.0"
   }
 }
-```
-
-Then in Render dashboard → Environment → add:
-```
-SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indram9iZnp2dWNveGhkeW5uY2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMTAxMTUsImV4cCI6MjA4Njg4NjExNX0.wNHiPlto1ZxvFvcbr6Nm6Dd0j9Fl20YZslRWQOOiI6o
