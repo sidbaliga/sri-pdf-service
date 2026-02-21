@@ -278,7 +278,9 @@ async function generatePDF(scores, email, company, reportDate) {
 
 app.post("/generate-report", async (req, res) => {
   try {
-    const { id, email, company } = req.body;
+    const { id, email } = req.body;
+
+    console.log("ID received:", id);
 
     if (!id) {
       return res.status(400).json({ error: "Missing record id" });
@@ -289,22 +291,19 @@ app.post("/generate-report", async (req, res) => {
       .select("*")
       .eq("id", id)
       .single();
-    console.log("ID received:", id);
-console.log("Supabase data:", JSON.stringify(data));
-console.log("Supabase error:", JSON.stringify(error));
+
+    console.log("Supabase data:", JSON.stringify(data));
+    console.log("Supabase error:", JSON.stringify(error));
 
     if (error || !data) {
-      console.error("Supabase fetch error:", error);
-      return res.status(404).json({ error: "Record not found in database" });
+      return res.status(404).json({ error: "Record not found", detail: JSON.stringify(error) });
     }
-
-    console.log("Fetched from Supabase:", data);
 
     const reportDate = new Date().toLocaleDateString("en-GB", {
       day: "numeric", month: "long", year: "numeric"
     });
 
-    const pdfPath = await generatePDF(data, email || data.email, company, reportDate);
+    const pdfPath = await generatePDF(data, email || data.email, email || data.email, reportDate);
 
     res.download(pdfPath, `SRI-Performance-Report-${Date.now()}.pdf`, () => {
       fs.unlinkSync(pdfPath);
